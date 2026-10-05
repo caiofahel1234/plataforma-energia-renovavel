@@ -3,6 +3,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 
 const errorMiddleware = require('./middlewares/error.middleware');
+const municipioRoutes = require('./routes/municipio.routes');
+const criterioRoutes = require('./routes/criterio.routes');
+const matrizDecisaoRoutes = require('./routes/matriz-decisao.routes');
 
 const app = express();
 
@@ -24,6 +27,10 @@ app.get('/teste-erro', (req, res, next) => {
 
     next(erro);
 });
+
+app.use('/api/municipios', municipioRoutes);
+app.use('/api/criterios', criterioRoutes);
+app.use('/api/matriz-decisao', matrizDecisaoRoutes);
 
 app.use(errorMiddleware);
 
