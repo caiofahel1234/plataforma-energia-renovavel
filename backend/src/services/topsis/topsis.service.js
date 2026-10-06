@@ -141,6 +141,96 @@ function calcularTOPSIS(matriz, pesos, tipos) {
     };
 }
 
+function prepararDadosTOPSIS(dados) {
+    if (!dados || dados.length === 0) {
+        throw new Error('Não existem dados na matriz de decisão');
+    }
+
+    const criteriosMap = new Map();
+    const municipiosMap = new Map();
+
+    for (const item of dados) {
+        if (!criteriosMap.has(item.criterioId)) {
+            criteriosMap.set(item.criterioId, {
+                peso: Number(item.criterio.peso),
+                tipo: item.criterio.tipo
+            });
+        }
+
+        if (!municipiosMap.has(item.municipioId)) {
+            municipiosMap.set(item.municipioId, {
+                municipio: item.municipio,
+                valores: new Map()
+            });
+        }
+
+        municipiosMap
+            .get(item.municipioId)
+            .valores
+            .set(item.criterioId, Number(item.valor));
+    }
+
+    const criterios = Array.from(criteriosMap.keys()).sort((a, b) => a - b);
+
+const pesos = criterios.map(
+    (criterioId) => criteriosMap.get(criterioId).peso
+);
+
+const tipos = criterios.map(
+    (criterioId) => criteriosMap.get(criterioId).tipo
+);
+
+// Validação dos pesos
+if (pesos.length === 0) {
+    throw new Error('Nenhum critério encontrado');
+}
+
+if (
+    pesos.some(
+        (peso) => !Number.isFinite(peso) || peso <= 0
+    )
+) {
+    throw new Error(
+        'Todos os critérios devem possuir pesos maiores que zero'
+    );
+}
+
+const somaPesos = pesos.reduce(
+    (soma, peso) => soma + peso,
+    0
+);
+
+if (Math.abs(somaPesos - 1) > 0.001) {
+    throw new Error(
+        `A soma dos pesos deve ser 1. Soma atual: ${somaPesos.toFixed(4)}`
+    );
+}
+
+    const municipios = Array.from(municipiosMap.values());
+
+    const matriz = municipios.map((item) =>
+        criterios.map((criterioId) => {
+            const valor = item.valores.get(criterioId);
+
+            if (valor === undefined) {
+                throw new Error(
+                    `Município ${item.municipio.nome} não possui valor para o critério ${criterioId}`
+                );
+            }
+
+            return valor;
+        })
+    );
+
+    return {
+        municipios: municipios.map((item) => item.municipio),
+        matriz,
+        pesos,
+        tipos
+    };
+}
+
 module.exports = {
-    calcularTOPSIS
+    calcularTOPSIS,
+    prepararDadosTOPSIS
 };

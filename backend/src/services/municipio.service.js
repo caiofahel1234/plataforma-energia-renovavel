@@ -43,6 +43,7 @@ async function atualizarMunicipio(id, dados) {
     return municipioRepository.atualizar(id, {
         nome: dados.nome,
         uf: dados.uf?.toUpperCase(),
+        codigoIbge: dados.codigoIbge,
         populacao: dados.populacao,
         idh: dados.idh
     });

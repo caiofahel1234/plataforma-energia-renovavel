@@ -1,19 +1,66 @@
-const { calcularTOPSIS } = require('./src/services/topsis/topsis.service');
+require('dotenv').config();
 
-const matriz = [
-    [10, 20],
-    [20, 10],
-    [15, 15]
-];
+console.log('DATABASE_URL existe:', !!process.env.DATABASE_URL);
 
-const pesos = [0.5, 0.5];
+console.log(
+    'DATABASE_URL:',
+    process.env.DATABASE_URL?.replace(/:[^:@]+@/, ':****@')
+);
 
-const tipos = ['custo', 'beneficio'];
+const prisma = require('./src/lib/prisma');
 
-const resultado = calcularTOPSIS(matriz, pesos, tipos);
+const {
+    calcularTOPSIS,
+    prepararDadosTOPSIS
+} = require('./src/services/topsis/topsis.service');
 
-console.log('Coeficientes:');
-console.log(resultado.coeficientes);
+async function main() {
+    const dados = await prisma.matrizDecisao.findMany({
+        orderBy: [
+            {
+                municipioId: 'asc'
+            },
+            {
+                criterioId: 'asc'
+            }
+        ],
+        include: {
+            municipio: true,
+            criterio: true
+        }
+    });
 
-console.log('\nRanking:');
-console.log(resultado.ranking);
+    console.log('\nDados encontrados no banco:');
+    console.log(dados);
+
+    const preparados = prepararDadosTOPSIS(dados);
+
+    console.log('\nMatriz:');
+    console.log(preparados.matriz);
+
+    console.log('\nPesos:');
+    console.log(preparados.pesos);
+
+    console.log('\nTipos:');
+    console.log(preparados.tipos);
+
+    const resultado = calcularTOPSIS(
+        preparados.matriz,
+        preparados.pesos,
+        preparados.tipos
+    );
+
+    console.log('\nCoeficientes:');
+    console.log(resultado.coeficientes);
+
+    console.log('\nRanking:');
+    console.log(resultado.ranking);
+}
+
+main()
+    .catch((erro) => {
+        console.error('Erro:', erro);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

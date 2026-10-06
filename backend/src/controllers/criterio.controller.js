@@ -59,10 +59,23 @@ async function remover(req, res, next) {
     }
 }
 
+async function atualizarPesos(req, res, next) {
+    try {
+        const resultado = await criterioService.atualizarPesos(
+            req.body.pesos
+        );
+
+        res.json(resultado);
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     listar,
     buscarPorId,
     criar,
     atualizar,
-    remover
+    remover,
+    atualizarPesos
 };

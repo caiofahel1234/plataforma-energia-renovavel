@@ -6,8 +6,16 @@ const errorMiddleware = require('./middlewares/error.middleware');
 const municipioRoutes = require('./routes/municipio.routes');
 const criterioRoutes = require('./routes/criterio.routes');
 const matrizDecisaoRoutes = require('./routes/matriz-decisao.routes');
+const topsisRoutes = require('./routes/topsis.routes');
+const simulacaoRoutes = require('./routes/simulacao.routes');
+const authRoutes = require('./routes/auth.routes');
+const configurarSwagger = require('./docs/swagger');
+const relatorioRoutes = require('./routes/relatorio.routes');
+const importacaoRoutes = require('./routes/importacao.routes');
 
 const app = express();
+
+configurarSwagger(app);
 
 app.use(helmet());
 
@@ -21,6 +29,14 @@ app.get('/', (req, res) => {
     });
 });
 
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        mensagem: 'API funcionando'
+    });
+});
+
+
 app.get('/teste-erro', (req, res, next) => {
     const erro = new Error('Erro de teste');
     erro.statusCode = 400;
@@ -31,6 +47,11 @@ app.get('/teste-erro', (req, res, next) => {
 app.use('/api/municipios', municipioRoutes);
 app.use('/api/criterios', criterioRoutes);
 app.use('/api/matriz-decisao', matrizDecisaoRoutes);
+app.use('/api/topsis', topsisRoutes);
+app.use('/api/simulacoes', simulacaoRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/relatorios', relatorioRoutes);
+app.use('/api/importacoes', importacaoRoutes);
 
 app.use(errorMiddleware);
 

@@ -55,10 +55,35 @@ async function remover(id) {
     });
 }
 
+async function buscarDadosParaTOPSIS() {
+    return prisma.matrizDecisao.findMany({
+        orderBy: [
+            {
+                municipioId: 'asc'
+            },
+            {
+                criterioId: 'asc'
+            }
+        ],
+        include: {
+            municipio: true,
+            criterio: true
+        }
+    });
+}
+
+async function criarEmLote(dados) {
+    return prisma.matrizDecisao.createMany({
+        data: dados,
+        skipDuplicates: true
+    });
+}
+
 module.exports = {
     listarTodos,
     buscarPorId,
     criar,
     atualizar,
-    remover
+    remover,
+    criarEmLote
 };

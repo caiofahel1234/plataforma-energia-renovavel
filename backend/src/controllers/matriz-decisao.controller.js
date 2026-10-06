@@ -59,10 +59,27 @@ async function remover(req, res, next) {
     }
 }
 
+async function importar(req, res, next) {
+    try {
+        const resultado =
+            await matrizDecisaoService.importarMatriz(
+                req.body.dados
+            );
+
+        res.status(201).json({
+            message: 'Dados importados com sucesso',
+            quantidade: resultado.count
+        });
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     listar,
     buscarPorId,
     criar,
     atualizar,
-    remover
+    remover,
+    importar
 };

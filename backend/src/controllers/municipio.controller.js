@@ -1,4 +1,5 @@
 const municipioService = require('../services/municipio.service');
+const prisma = require('../lib/prisma');
 
 async function listar(req, res, next) {
     try {
@@ -59,10 +60,33 @@ async function remover(req, res, next) {
     }
 }
 
+async function listarComCoordenadas(req, res, next) {
+    try {
+        const municipios = await prisma.$queryRaw`
+            SELECT
+                id,
+                nome,
+                uf,
+                populacao,
+                idh,
+                ST_Y(coordenadas) AS latitude,
+                ST_X(coordenadas) AS longitude
+            FROM municipios
+            WHERE coordenadas IS NOT NULL
+            ORDER BY nome;
+        `;
+
+        res.json(municipios);
+    } catch (erro) {
+        next(erro);
+    }
+}
+
 module.exports = {
     listar,
     buscarPorId,
     criar,
     atualizar,
-    remover
+    remover,
+    listarComCoordenadas
 };

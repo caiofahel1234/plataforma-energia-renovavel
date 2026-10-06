@@ -10,8 +10,10 @@ model Municipio {
   id          Int               @id @default(autoincrement())
   nome        String            @db.VarChar(200)
   uf          String            @db.Char(2)
+  codigoIbge  String?           @unique @map("codigo_ibge")
   populacao   Int?
   idh         Decimal?          @db.Decimal(4, 3)
+  coordenadas Unsupported("geometry")?
   createdAt   DateTime          @default(now()) @map("created_at")
 
   matrizDecisao MatrizDecisao[]
