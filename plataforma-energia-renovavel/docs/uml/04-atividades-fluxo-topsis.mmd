@@ -1,0 +1,18 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Arial, sans-serif","fontSize":"15px","primaryColor":"#d1fae5","primaryTextColor":"#0f172a","primaryBorderColor":"#047857","lineColor":"#334155","secondaryColor":"#e0f2fe","tertiaryColor":"#f8fafc","noteBkgColor":"#fef9c3","noteTextColor":"#0f172a","actorBkg":"#d1fae5","actorBorder":"#047857","actorTextColor":"#0f172a","signalColor":"#334155","signalTextColor":"#0f172a","labelBoxBkgColor":"#e0f2fe","labelBoxBorderColor":"#0369a1","labelTextColor":"#0f172a","loopTextColor":"#0f172a","activationBkgColor":"#a7f3d0","classText":"#0f172a"}}}%%
+flowchart TD
+  I(("Início")) --> A["Selecionar alternativas (municípios)"]
+  A --> B["Selecionar critérios e pesos"]
+  B --> C{"Soma dos pesos = 1,0?"}
+  C -- Não --> X["Exibir erro de validação"]
+  X --> B
+  C -- Sim --> D["Montar matriz de decisão"]
+  D --> E["Normalizar matriz (norma vetorial)"]
+  E --> F["Aplicar pesos (matriz ponderada)"]
+  F --> G["Determinar solução ideal positiva (A+)"]
+  G --> H["Determinar solução ideal negativa (A-)"]
+  H --> J["Calcular distância euclidiana a A+"]
+  J --> K["Calcular distância euclidiana a A-"]
+  K --> L["Calcular coeficiente de proximidade<br/>Ci = D- / (D+ + D-)"]
+  L --> M["Ordenar por Ci (ranking)<br/>maior Ci = menos vulnerável"]
+  M --> N["Exibir resultados"]
+  N --> O(("Fim"))
