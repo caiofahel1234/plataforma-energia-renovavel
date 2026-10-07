@@ -1,0 +1,63 @@
+openapi: 3.0.3
+info:
+  title: Plataforma TOPSIS – Vulnerabilidade Social Energética
+  version: 1.0.0
+  description: |
+    API REST (RNF06). Autenticação por **cookie httpOnly** (`token`) emitido em `/auth/login`.
+    Requisições que alteram estado exigem o cabeçalho **X-CSRF-Token** (valor retornado em `/auth/login` e `/auth/me`).
+    Perfis (RBAC): `admin`, `pesquisador`, `gestor`. Erros usam mensagens genéricas + `requestId`.
+servers: [{ url: /api }]
+components:
+  securitySchemes:
+    cookieAuth: { type: apiKey, in: cookie, name: token }
+    csrfHeader: { type: apiKey, in: header, name: X-CSRF-Token }
+  schemas:
+    Erro: { type: object, properties: { erro: { type: string }, requestId: { type: string, format: uuid }, campos: { type: array, items: { type: string } } } }
+    Login: { type: object, required: [email, senha], properties: { email: { type: string, format: email }, senha: { type: string, maxLength: 72 } } }
+    Usuario: { type: object, properties: { id: { type: integer }, nome: { type: string }, email: { type: string }, papel: { type: string, enum: [admin, pesquisador, gestor] }, ativo: { type: boolean } } }
+    NovoUsuario: { type: object, required: [nome, email, papel, senha], properties: { nome: { type: string }, email: { type: string }, papel: { type: string, enum: [admin, pesquisador, gestor] }, senha: { type: string, minLength: 12, maxLength: 72, description: maiúscula, minúscula, número e símbolo } } }
+    Municipio: { type: object, properties: { id: { type: integer }, nome: { type: string }, uf: { type: string, example: BA }, populacao: { type: integer }, idh: { type: number, nullable: true }, lat: { type: number }, lng: { type: number }, values: { type: object, additionalProperties: { type: number }, description: 'valor por id de critério' } } }
+    NovoMunicipio: { type: object, required: [nome, uf, populacao, lat, lng], properties: { nome: { type: string }, uf: { type: string, pattern: '^[A-Z]{2}$' }, populacao: { type: integer }, idh: { type: number, minimum: 0, maximum: 1 }, lat: { type: number }, lng: { type: number }, values: { type: object, additionalProperties: { type: number } } } }
+    Criterio: { type: object, properties: { id: { type: integer }, nome: { type: string }, descricao: { type: string, nullable: true }, type: { type: string, enum: [benefit, cost] }, unit: { type: string }, weight: { type: number } } }
+    NovoCriterio: { type: object, required: [nome, tipo], properties: { nome: { type: string }, descricao: { type: string }, tipo: { type: string, enum: [beneficio, custo] }, unidade: { type: string }, peso: { type: number, minimum: 0, maximum: 1 } } }
+    ExecutarTopsis: { type: object, required: [criterios], properties: { municipioIds: { type: array, items: { type: integer } }, criterios: { type: array, minItems: 2, items: { type: object, required: [id, tipo, peso], properties: { id: { type: integer }, tipo: { type: string, enum: [beneficio, custo] }, peso: { type: number } } }, description: A soma dos pesos deve ser 1,0 } } }
+    ItemRanking: { type: object, properties: { pos: { type: integer }, id: { type: integer }, nome: { type: string }, uf: { type: string }, ci: { type: number, description: 'maior Ci = menos vulnerável' }, dPlus: { type: number }, dMinus: { type: number }, critico: { type: string } } }
+    ResultadoTopsis: { type: object, properties: { simulacaoId: { type: integer }, ranking: { type: array, items: { $ref: '#/components/schemas/ItemRanking' } }, metadata: { type: object, properties: { n: { type: integer }, tempoMs: { type: integer } } } } }
+  responses:
+    Generico: { description: Erro (mensagem genérica), content: { application/json: { schema: { $ref: '#/components/schemas/Erro' } } } }
+security: [{ cookieAuth: [], csrfHeader: [] }]
+paths:
+  /auth/login:
+    post: { tags: [Autenticação], summary: Autenticar (RNF04), security: [], requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/Login' } } } }, responses: { '200': { description: 'Define cookie httpOnly; retorna usuário e csrf' }, '400': { $ref: '#/components/responses/Generico' }, '401': { $ref: '#/components/responses/Generico' }, '429': { $ref: '#/components/responses/Generico' } } }
+  /auth/me:
+    get: { tags: [Autenticação], summary: Sessão atual, responses: { '200': { description: 'user + csrf' }, '401': { $ref: '#/components/responses/Generico' } } }
+  /auth/logout:
+    post: { tags: [Autenticação], summary: Encerrar sessão, responses: { '204': { description: Sessão encerrada } } }
+  /usuarios:
+    get: { tags: [Usuários], summary: 'Listar usuários (admin) – RF08', responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Usuario' } } } } }, '403': { $ref: '#/components/responses/Generico' } } }
+    post: { tags: [Usuários], summary: 'Criar usuário (admin) – senha forte, bcrypt', requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/NovoUsuario' } } } }, responses: { '201': { description: Criado }, '400': { $ref: '#/components/responses/Generico' }, '409': { $ref: '#/components/responses/Generico' } } }
+  /municipios:
+    get: { tags: [Municípios], summary: 'Listar municípios com a matriz de decisão – RF01', responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Municipio' } } } } } } }
+    post: { tags: [Municípios], summary: 'Cadastrar município (admin) – UC01', requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/NovoMunicipio' } } } }, responses: { '201': { description: Criado }, '400': { $ref: '#/components/responses/Generico' }, '403': { $ref: '#/components/responses/Generico' } } }
+  /municipios/{id}:
+    delete: { tags: [Municípios], summary: Excluir município (admin), parameters: [{ name: id, in: path, required: true, schema: { type: integer } }], responses: { '204': { description: Excluído }, '404': { $ref: '#/components/responses/Generico' } } }
+  /criterios:
+    get: { tags: [Critérios], summary: 'Listar critérios – RF02', responses: { '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Criterio' } } } } } } }
+    post: { tags: [Critérios], summary: 'Criar critério (pesquisador/admin) – UC02', requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/NovoCriterio' } } } }, responses: { '201': { description: Criado }, '403': { $ref: '#/components/responses/Generico' } } }
+  /criterios/{id}:
+    put: { tags: [Critérios], summary: 'Alterar tipo/peso (auditado) – RF03', parameters: [{ name: id, in: path, required: true, schema: { type: integer } }], requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/NovoCriterio' } } } }, responses: { '204': { description: Atualizado }, '404': { $ref: '#/components/responses/Generico' } } }
+    delete: { tags: [Critérios], summary: Excluir critério (auditado), parameters: [{ name: id, in: path, required: true, schema: { type: integer } }], responses: { '204': { description: Excluído }, '404': { $ref: '#/components/responses/Generico' } } }
+  /topsis/executar:
+    post: { tags: [TOPSIS], summary: 'Executar cálculo e gerar ranking – RF04, UC03', requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ExecutarTopsis' } } } }, responses: { '200': { description: Ranking, content: { application/json: { schema: { $ref: '#/components/schemas/ResultadoTopsis' } } } }, '400': { $ref: '#/components/responses/Generico' }, '422': { description: 'Pesos ≠ 1,0 ou matriz incompleta' } } }
+  /simulacoes:
+    get: { tags: [Simulações], summary: 'Histórico – RF10', responses: { '200': { description: 'OK (admin: todas; demais: próprias)' } } }
+  /simulacoes/{id}:
+    get: { tags: [Simulações], summary: Obter resultado de simulação, parameters: [{ name: id, in: path, required: true, schema: { type: integer } }], responses: { '200': { description: OK }, '404': { description: 'Inexistente ou de outro usuário' } } }
+  /relatorios/{id}/pdf:
+    get: { tags: [Relatórios], summary: 'Exportar PDF – RF06, UC04', parameters: [{ name: id, in: path, required: true, schema: { type: integer } }], responses: { '200': { description: PDF, content: { application/pdf: { schema: { type: string, format: binary } } } }, '404': { $ref: '#/components/responses/Generico' } } }
+  /relatorios/{id}/csv:
+    get: { tags: [Relatórios], summary: Exportar CSV (neutraliza formula injection), parameters: [{ name: id, in: path, required: true, schema: { type: integer } }], responses: { '200': { description: CSV, content: { text/csv: { schema: { type: string } } } } } }
+  /importacao/ibge/{codigo}:
+    get: { tags: [Importação], summary: 'Dados do município no IBGE (admin) – RF09', parameters: [{ name: codigo, in: path, required: true, schema: { type: string, pattern: '^\d{7}$' } }], responses: { '200': { description: 'nome, uf, população' }, '404': { $ref: '#/components/responses/Generico' }, '502': { $ref: '#/components/responses/Generico' } } }
+  /importacao/cep/{cep}:
+    get: { tags: [Importação], summary: 'Município a partir do CEP (ViaCEP + IBGE)', parameters: [{ name: cep, in: path, required: true, schema: { type: string, pattern: '^\d{8}$' } }], responses: { '200': { description: OK }, '404': { $ref: '#/components/responses/Generico' } } }

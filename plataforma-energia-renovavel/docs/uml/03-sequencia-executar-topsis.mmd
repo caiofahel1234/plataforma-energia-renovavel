@@ -1,0 +1,54 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Arial, sans-serif","fontSize":"15px","primaryColor":"#d1fae5","primaryTextColor":"#0f172a","primaryBorderColor":"#047857","lineColor":"#334155","secondaryColor":"#e0f2fe","tertiaryColor":"#f8fafc","noteBkgColor":"#fef9c3","noteTextColor":"#0f172a","actorBkg":"#d1fae5","actorBorder":"#047857","actorTextColor":"#0f172a","signalColor":"#334155","signalTextColor":"#0f172a","labelBoxBkgColor":"#e0f2fe","labelBoxBorderColor":"#0369a1","labelTextColor":"#0f172a","loopTextColor":"#0f172a","activationBkgColor":"#a7f3d0","classText":"#0f172a"}}}%%
+sequenceDiagram
+  autonumber
+  actor U as Pesquisador
+  participant FE as Frontend (SPA)
+  participant API as API REST
+  participant AU as Middleware Autenticação/CSRF
+  participant RB as Middleware RBAC
+  participant VA as Validação (esquema estrito)
+  participant TS as TopsisService
+  participant DB as Banco de Dados
+  participant AD as Auditoria
+  U->>FE: Clica "Executar TOPSIS"
+  FE->>API: POST /api/topsis/executar {criterios, pesos} (cookie JWT + X-CSRF-Token)
+  API->>AU: verificar JWT (cookie httpOnly) e token CSRF
+  break sessão inválida (401) ou CSRF inválido (403)
+    AU->>AD: registrar CSRF_INVALIDO (se aplicável)
+    AU-->>API: rejeita requisição
+    API-->>FE: 401/403 · mensagem genérica
+    FE-->>U: Exibe mensagem genérica
+  end
+  AU->>RB: req.user {id, papel}
+  RB->>RB: papel permitido? (admin, pesquisador, gestor)
+  break papel sem permissão (403)
+    RB->>AD: registrar ACESSO_NEGADO
+    RB-->>API: nega acesso
+    API-->>FE: 403 · mensagem genérica
+    FE-->>U: Exibe mensagem genérica
+  end
+  RB->>VA: validar corpo da requisição
+  VA->>VA: soma dos pesos = 1,0?
+  break dados inválidos (400) ou pesos ≠ 1,0 (422)
+    VA-->>API: erro de validação
+    API-->>FE: 400/422 · mensagem genérica
+    FE-->>U: Exibe erro de validação
+  end
+  Note over API,VA: Gestor Público: tipos e pesos vêm da configuração OFICIAL (UC02) no BD — os enviados são ignorados
+  API->>DB: listarMatriz() (consulta parametrizada)
+  DB-->>API: matriz de decisão
+  API->>TS: calcular(matriz, pesos, tipos)
+  TS->>TS: normalizar()
+  TS->>TS: calcularPonderada()
+  TS->>TS: idealPositiva()
+  TS->>TS: idealNegativa()
+  TS->>TS: distancias()
+  TS->>TS: coeficienteProximidade()
+  TS->>DB: salvarSimulacao(resultado)
+  DB-->>TS: confirmação (simulacao_id)
+  TS-->>API: ranking[]
+  API->>AD: registrar TOPSIS_EXECUTADO
+  AD->>DB: INSERT audit_logs
+  DB-->>AD: confirmação
+  API-->>FE: 200 OK {ranking, metadata}
+  FE-->>U: Exibe dashboard com ranking

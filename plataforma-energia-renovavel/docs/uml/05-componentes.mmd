@@ -1,0 +1,51 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Arial, sans-serif","fontSize":"15px","primaryColor":"#d1fae5","primaryTextColor":"#0f172a","primaryBorderColor":"#047857","lineColor":"#334155","secondaryColor":"#e0f2fe","tertiaryColor":"#f8fafc","noteBkgColor":"#fef9c3","noteTextColor":"#0f172a","actorBkg":"#d1fae5","actorBorder":"#047857","actorTextColor":"#0f172a","signalColor":"#334155","signalTextColor":"#0f172a","labelBoxBkgColor":"#e0f2fe","labelBoxBorderColor":"#0369a1","labelTextColor":"#0f172a","loopTextColor":"#0f172a","activationBkgColor":"#a7f3d0","classText":"#0f172a"}}}%%
+flowchart TB
+  subgraph FE["«subsystem» Frontend (SPA) · React + Vite + Tailwind"]
+    direction LR
+    FRM["Formulários"]
+    DASH["Dashboard<br/>(Recharts)"]
+    MAP["Mapas<br/>(Leaflet)"]
+    RES["TOPSIS / Resultados"]
+    ADMU["Usuários (admin)"]
+    CLI["Cliente HTTP<br/>CSRF em memória"]
+  end
+  subgraph BE["«subsystem» Backend (API) · Node.js + Express"]
+    direction TB
+    MW["Middlewares de segurança<br/>Helmet · CORS · Rate limit · Auth/CSRF · RBAC · Validação"]
+    CTR["Controllers / Rotas"]
+    subgraph MOD["Módulos"]
+      direction LR
+      AUTH["AuthModule"]
+      ENG["TOPSISEngine<br/>(TopsisService)"]
+      IMP["DataImport<br/>(IBGE / ViaCEP)"]
+      REL["Relatórios<br/>PDF / CSV"]
+      AUD["Auditoria"]
+    end
+    MDL["Models (repositórios)"]
+  end
+  subgraph DBS["«subsystem» Persistência"]
+    direction LR
+    PG[("PostgreSQL")]
+    GIS[("PostGIS")]
+  end
+  EXT["IBGE / ViaCEP<br/>(fontes externas)"]
+  FRM --> CLI
+  DASH --> CLI
+  MAP --> CLI
+  RES --> CLI
+  ADMU --> CLI
+  CLI -->|"REST/JSON (HTTPS)"| MW
+  MW --> CTR
+  CTR --> AUTH
+  CTR --> ENG
+  CTR --> IMP
+  CTR --> REL
+  CTR --> AUD
+  AUTH --> MDL
+  ENG --> MDL
+  REL --> MDL
+  AUD --> MDL
+  IMP -->|HTTPS| EXT
+  MDL -->|"SQL parametrizado"| PG
+  MDL -->|"SQL espacial"| GIS
+  GIS -.->|"extensão de"| PG
