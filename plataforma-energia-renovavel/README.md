@@ -19,11 +19,10 @@ docker-compose.yml · .github/workflows/ci.yml
 
 ## Subir tudo com 1 comando (Docker)
 ```bash
-./scripts/gen-dev-cert.sh                   # certificado autoassinado p/ HTTPS (apenas dev)
 cp .env.example .env                        # preencha POSTGRES_PASSWORD, JWT_SECRET, ADMIN_PASSWORD
 docker compose up --build
 ```
-Abra `https://localhost` (aceite o certificado autoassinado). Login: `ADMIN_EMAIL` / `ADMIN_PASSWORD` do `.env`. Swagger: `https://localhost/api/docs`. O banco já sobe com os critérios do Cap. 7.1 e **8 municípios fictícios** (`backend/seeds/demo.sql` – remova em produção). Após o 1º acesso, apague `ADMIN_PASSWORD` do `.env`.
+Abra `http://localhost:8080` (aceite o certificado autoassinado). Login: `ADMIN_EMAIL` / `ADMIN_PASSWORD` do `.env`. Swagger: `http://localhost:8080/api/docs`. O banco já sobe com os critérios do Cap. 7.1 e **8 municípios fictícios** (`backend/seeds/demo.sql` – remova em produção). Após o 1º acesso, apague `ADMIN_PASSWORD` do `.env`.
 
 ## Desenvolvimento local
 ```bash
