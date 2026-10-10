@@ -36,5 +36,5 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: ./scripts/gen-dev-cert.sh && cp .env.example .env && sed -i 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-pass/;s/^JWT_SECRET=.*/JWT_SECRET=ci-secret-ci-secret-ci-secret-ci-secret-12345/;s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=Admin@Segura-2026/' .env
+      - run: cp .env.example .env && sed -i 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-pass/;s/^JWT_SECRET=.*/JWT_SECRET=ci-secret-ci-secret-ci-secret-ci-secret-12345/;s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=Admin@Segura-2026/' .env
       - run: docker compose build
