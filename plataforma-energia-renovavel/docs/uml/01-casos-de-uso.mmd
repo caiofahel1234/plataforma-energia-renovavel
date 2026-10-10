@@ -1,0 +1,47 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Arial, sans-serif","fontSize":"15px","primaryColor":"#d1fae5","primaryTextColor":"#0f172a","primaryBorderColor":"#047857","lineColor":"#334155","secondaryColor":"#e0f2fe","tertiaryColor":"#f8fafc","noteBkgColor":"#fef9c3","noteTextColor":"#0f172a","actorBkg":"#d1fae5","actorBorder":"#047857","actorTextColor":"#0f172a","signalColor":"#334155","signalTextColor":"#0f172a","labelBoxBkgColor":"#e0f2fe","labelBoxBorderColor":"#0369a1","labelTextColor":"#0f172a","loopTextColor":"#0f172a","activationBkgColor":"#a7f3d0","classText":"#0f172a"}}}%%
+flowchart LR
+  ADM(["👤 Administrador"]):::ator
+  PES(["👤 Pesquisador"]):::ator
+  GES(["👤 Gestor Público"]):::ator
+  subgraph SIS["Plataforma de Mensuração Multicritério de Vulnerabilidade Social Energética"]
+    direction TB
+    UC01(["UC01 · Cadastrar Município"])
+    UC02(["UC02 · Configurar Critérios TOPSIS"])
+    UC03(["UC03 · Executar TOPSIS"])
+    UC04(["UC04 · Gerar Relatório"])
+    UC05(["Gerenciar Usuários"])
+    UC06(["Visualizar Mapa Georreferenciado"])
+    UC07(["Consultar Histórico de Simulações"])
+    AUT(["Autenticar<br/>(pré-condição dos demais casos de uso)"])
+    VAL(["Validar e Persistir Dados"])
+    RNK(["Visualizar Ranking"])
+    EXP(["Exportar PDF/CSV"])
+    UC08(["Analisar Correlações e Comparar Unidades"])
+    UC09(["Consultar Trilha de Auditoria"])
+    CFG(["Aplicar Configuração Oficial de Pesos"])
+  end
+  ADM -.->|"«herda»"| PES
+  ADM -.->|"«herda»"| GES
+  ADM --- UC01
+  ADM --- UC05
+  ADM --- UC09
+  PES --- UC02
+  PES --- UC03
+  PES --- UC06
+  PES --- UC07
+  PES --- UC08
+  GES --- UC03
+  GES --- UC04
+  GES --- UC06
+  GES --- UC07
+  PES --- AUT
+  GES --- AUT
+  UC01 -.->|"«include»"| VAL
+  UC02 -.->|"«include»"| VAL
+  UC05 -.->|"«include»"| VAL
+  UC03 -.->|"«include»"| RNK
+  UC03 -.->|"«include»"| CFG
+  UC04 -.->|"«include»"| UC07
+  UC04 -.->|"«include»"| EXP
+  UC07 -.->|"«extend»"| UC03
+  classDef ator fill:#0b2545,stroke:#0b2545,color:#ffffff

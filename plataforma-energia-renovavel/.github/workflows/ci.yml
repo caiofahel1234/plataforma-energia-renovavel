@@ -1,0 +1,40 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env: { POSTGRES_USER: vse_app, POSTGRES_PASSWORD: ci, POSTGRES_DB: vse_test }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U vse_app" --health-interval 5s --health-retries 10
+    defaults: { run: { working-directory: backend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: backend/package-lock.json }
+      - run: npm ci
+      - run: npm test                      # unitários + integração (limiar de cobertura 80%)
+      - run: npm run test:db               # integração real com PostgreSQL/PostGIS
+        env: { RUN_DB_TESTS: "1", DATABASE_URL: "postgres://vse_app:ci@localhost:5432/vse_test" }
+      - run: npm audit --omit=dev --audit-level=high
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm, cache-dependency-path: frontend/package-lock.json }
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --omit=dev --audit-level=high
+      - uses: cypress-io/github-action@v6      # E2E (modo demonstração)
+        with: { working-directory: frontend, start: npm run dev, wait-on: "http://localhost:5173" }
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/gen-dev-cert.sh && cp .env.example .env && sed -i 's/^POSTGRES_PASSWORD=.*/POSTGRES_PASSWORD=ci-pass/;s/^JWT_SECRET=.*/JWT_SECRET=ci-secret-ci-secret-ci-secret-ci-secret-12345/;s/^ADMIN_PASSWORD=.*/ADMIN_PASSWORD=Admin@Segura-2026/' .env
+      - run: docker compose build

@@ -1,0 +1,103 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Inter, Segoe UI, Arial, sans-serif","fontSize":"15px","primaryColor":"#d1fae5","primaryTextColor":"#0f172a","primaryBorderColor":"#047857","lineColor":"#334155","secondaryColor":"#e0f2fe","tertiaryColor":"#f8fafc","noteBkgColor":"#fef9c3","noteTextColor":"#0f172a","actorBkg":"#d1fae5","actorBorder":"#047857","actorTextColor":"#0f172a","signalColor":"#334155","signalTextColor":"#0f172a","labelBoxBkgColor":"#e0f2fe","labelBoxBorderColor":"#0369a1","labelTextColor":"#0f172a","loopTextColor":"#0f172a","activationBkgColor":"#a7f3d0","classText":"#0f172a"}}}%%
+classDiagram
+  direction TB
+  class Municipio {
+    -int id
+    -string nome
+    -string uf
+    -int populacao
+    -float idh
+    -geo coordenadas
+  }
+  class Criterio {
+    -int id
+    -string nome
+    -string descricao
+    -TipoCriterio tipo
+    -float peso
+    -string unidade
+  }
+  class MatrizDecisao {
+    -int municipio_id FK
+    -int criterio_id FK
+    -float valor
+    -int ano_referencia
+  }
+  class SimulacaoTOPSIS {
+    -int id
+    -datetime data_execucao
+    -int usuario_id FK
+    -JSON parametros
+    -StatusSimulacao status
+  }
+  class ResultadoRanking {
+    -int simulacao_id FK
+    -int municipio_id FK
+    -float coeficiente_ci
+    -float distancia_positiva
+    -float distancia_negativa
+    -int posicao_ranking
+  }
+  class Usuario {
+    -int id
+    -string nome
+    -string email
+    -PapelUsuario papel
+    -string senha_hash
+    -boolean ativo
+    -int tentativas_falhas
+    -datetime bloqueado_ate
+  }
+  class LogAuditoria {
+    -int id
+    -datetime ts
+    -int usuario_id FK
+    -string acao
+    -string entidade
+    -string entidade_id
+    -string ip
+    -JSON detalhes
+  }
+  class TopsisService {
+    <<service>>
+    +normalizar(matriz)
+    +calcularPonderada(matriz, pesos)
+    +idealPositiva(matrizPonderada, tipos)
+    +idealNegativa(matrizPonderada, tipos)
+    +distancias(matriz, idealPositivo, idealNegativo)
+    +coeficienteProximidade(Dmais, Dmenos)
+    +executar(matriz, criterios, pesos)
+    +salvarSimulacao(resultado)
+  }
+  class TipoCriterio {
+    <<enumeration>>
+    beneficio
+    custo
+  }
+  class PapelUsuario {
+    <<enumeration>>
+    admin
+    pesquisador
+    gestor
+  }
+  class StatusSimulacao {
+    <<enumeration>>
+    pendente
+    executando
+    concluida
+    erro
+  }
+  Municipio "1" --> "0..*" MatrizDecisao : possui valores
+  Criterio "1" --> "0..*" MatrizDecisao : compõe
+  Municipio "1" --> "0..*" ResultadoRanking : participa
+  SimulacaoTOPSIS "1" *-- "1..*" ResultadoRanking : produz
+  Usuario "1" --> "0..*" SimulacaoTOPSIS : executa
+  Usuario "1" --> "0..*" LogAuditoria : gera
+  SimulacaoTOPSIS ..> MatrizDecisao : utiliza
+  TopsisService ..> MatrizDecisao : processa
+  TopsisService ..> Criterio : utiliza
+  TopsisService ..> SimulacaoTOPSIS : cria
+  TopsisService ..> ResultadoRanking : gera
+  Criterio --> TipoCriterio
+  Usuario --> PapelUsuario
+  SimulacaoTOPSIS --> StatusSimulacao
